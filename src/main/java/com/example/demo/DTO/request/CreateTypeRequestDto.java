@@ -1,5 +1,7 @@
 package com.example.demo.DTO.request;
 
+import com.example.demo.enums.Types;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -7,7 +9,7 @@ import lombok.NoArgsConstructor;
 @Data
 @NoArgsConstructor
 @AllArgsConstructor
-public class CreateFleetRequestDto {
-    private Integer typeId;
-    private Integer quantity;
+public class CreateTypeRequestDto {
+    private Types type;
+    private Integer price;
 }

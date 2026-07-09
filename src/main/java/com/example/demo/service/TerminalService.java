@@ -1,11 +1,14 @@
 package com.example.demo.service;
 
+import org.springframework.stereotype.Service;
+
 import com.example.demo.DTO.request.CreateTerminalRequestDto;
 import com.example.demo.DTO.response.TerminalResponseDto;
 import com.example.demo.mapper.TerminalMapper;
 import com.example.demo.model.Terminal;
 import com.example.demo.repository.TerminalRepository;
 
+@Service
 public class TerminalService {
     private final TerminalRepository terminalRepo;
     private TerminalMapper terminalMapper;

@@ -12,7 +12,7 @@ import com.example.demo.model.User;
 public interface UserRepository extends JpaRepository<User, Integer> {
     @Query("""
             SELECT u 
-            FROM user u
+            FROM User u
             LEFT JOIN FETCH u.person
             WHERE u.username = :username
     """)

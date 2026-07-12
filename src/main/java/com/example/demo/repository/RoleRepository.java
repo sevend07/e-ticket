@@ -9,5 +9,5 @@ import com.example.demo.model.Role;
 
 @Repository
 public interface RoleRepository extends JpaRepository<Role, Integer> {
-    Optional<Role> findFirstByOrderByLevelDsc();
+    Optional<Role> findFirstByOrderByLevelDesc();
 }

@@ -36,6 +36,10 @@ public class Fleet {
     @JoinColumn(name = "type_id")
     private Type type;
 
+    // @ManyToOne
+    // @JoinColumn(name = "current_terminal_id")
+    // private Terminal currentTerminal;
+
     @OneToMany(mappedBy = "fleet")
     private List<Trip> trips;
 }

@@ -9,10 +9,10 @@ import com.example.demo.DTO.request.CreateTypeRequestDto;
 import com.example.demo.model.Type;
 import com.example.demo.repository.TypeRepository;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class TypeService {
     private final TypeRepository repo;
 
@@ -21,6 +21,7 @@ public class TypeService {
         for (CreateTypeRequestDto request : requests) {
             Type type = new Type();
             type.setType(request.getType());
+            type.setTotalSeat(request.getTotalSeat());
             type.setPrice(request.getPrice());
 
             newType.add(type);

@@ -11,5 +11,5 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class CreateTypeRequestDto {
     private Types type;
-    private Integer price;
+    private Integer totalSeat, price;
 }

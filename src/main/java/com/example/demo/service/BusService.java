@@ -71,11 +71,12 @@ public class BusService {
 
             List<Fleet> newFleets = new ArrayList<>();
 
+            CodeGenerationUtil fleetCodeGenerator = new CodeGenerationUtil(fleetRepo);
             requestMap.forEach((key, value) -> {
                 for (Integer i = 1; i <= value; i++) {
                     Fleet fleet = new Fleet();
                     fleet.setBus(bus);
-                    fleet.setCode(new CodeGenerationUtil(fleetRepo).generateFleetCode(bus));
+                    fleet.setCode(fleetCodeGenerator.generateFleetCode(bus));
                     fleet.setType(typeMap.get(key));
 
                     newFleets.add(fleet);

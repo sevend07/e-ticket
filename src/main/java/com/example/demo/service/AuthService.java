@@ -10,24 +10,23 @@ import com.example.demo.DTO.response.LoginResponse;
 import com.example.demo.model.Person;
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
-import com.example.demo.repository.PersonRepository;
 import com.example.demo.repository.RoleRepository;
 import com.example.demo.repository.UserRepository;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 @Service
-@AllArgsConstructor
+@RequiredArgsConstructor
 public class AuthService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepo;
-    private final PersonRepository personRepo;
 
-    public AuthService(PersonRepository personRepo, UserRepository userRepo, RoleRepository roleRepository) {
-        this.userRepo = userRepo;
-        this.personRepo = personRepo;
-        this.roleRepository = roleRepository;
-    }
+    // public AuthService(PersonRepository personRepo, UserRepository userRepo,
+    // RoleRepository roleRepository) {
+    // this.userRepo = userRepo;
+    // this.personRepo = personRepo;
+    // this.roleRepository = roleRepository;
+    // }
 
     public LoginResponse login(String username, String password) {
         User user = userRepo.findByUsername(username)
@@ -49,7 +48,7 @@ public class AuthService {
         if (userRepo.existsByUsername(request.username()))
             throw new RuntimeException("Username already exists");
 
-        Role role = roleRepository.findFirstByOrderByLevelDsc()
+        Role role = roleRepository.findFirstByOrderByLevelDesc()
                 .orElseThrow(() -> new RuntimeException("Role not found"));
 
         Person newPerson = new Person();

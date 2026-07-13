@@ -28,6 +28,9 @@ public class Terminal {
     @Column(name = "city")
     private String city;
 
+    // @OneToMany(mappedBy = "currentTerminal")
+    // private List<Fleet> fleets;
+
     @OneToMany(mappedBy = "departureTerminal")
     private List<Trip> departureTrips;
 

@@ -35,38 +35,38 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
 
-    @Query("""
-            SELECT COUNT(*)
-            FROM Trip
-            WHERE fleet_id = :fleetId
-            AND departure_time <= :arrivalTime
-            AND arrival_time >= :departureTime
-            """)
-    boolean existsOverlap(
-            @Param("fleetId") Integer fleetId,
-            @Param("departureTime") LocalDateTime departureTime,
-            @Param("arrivalTime") LocalDateTime arrivalTime);
+    // @Query("""
+    //         SELECT COUNT(*)
+    //         FROM Trip
+    //         WHERE fleet_id = :fleetId
+    //         AND departure_time <= :arrivalTime
+    //         AND arrival_time >= :departureTime
+    //         """)
+    // boolean existsOverlap(
+    //         @Param("fleetId") Integer fleetId,
+    //         @Param("departureTime") LocalDateTime departureTime,
+    //         @Param("arrivalTime") LocalDateTime arrivalTime);
 
-    boolean existsByFleetIdAndDepartureTime(Integer fleetId, LocalDateTime departureTime);
+    // boolean existsByFleetIdAndDepartureTime(Integer fleetId, LocalDateTime departureTime);
+
+    // @Query("""
+    //         SELECT arrival_time
+    //         FROM Trip
+    //         WHERE fleet_id = :fleetId
+    //         ORDER BY arrival_time DESC
+    //         LIMIT 1
+    //         """)
+    // LocalDateTime findLatestArrivalByFleet(
+    //         @Param("fleetId") Integer fleetId);
 
     @Query("""
-            SELECT arrival_time
-            FROM Trip
-            WHERE fleet_id = :fleetId
-            ORDER BY arrival_time DESC
-            LIMIT 1
-            """)
-    LocalDateTime findLatestArrivalByFleet(
-            @Param("fleetId") Integer fleetId);
-
-    @Query("""
-            SELECT fleet_id FROM Trip
-            WHERE fleet_id IN :fleetIds
-            AND departure_time <= maxArrival
-            AND arrival_time >= minDeparture
+            SELECT DISTINCT t.fleet.id FROM Trip t
+            WHERE t.fleet.id IN :fleetIds
+            AND departureTime <= :maxArrival
+            AND arrivalTime >= :minDeparture
             """)
     List<Trip> findConflictingTrips(
-            @Param("fleetId") Set<Integer> fleetIds,
+            @Param("fleetIds") Set<Integer> fleetIds,
             @Param("minDeparture") LocalDateTime minDeparture,
             @Param("maxArrival") LocalDateTime maxArrival);
 }

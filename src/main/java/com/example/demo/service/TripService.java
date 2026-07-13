@@ -41,6 +41,7 @@ public class TripService {
         return repo.findTrips(departureTerminal, destinationTerminal, start, end);
     }
 
+    @Transactional
     public List<TripResponse.CompleteResponse> bulkCreate(CreateTripRequest request) {
         Terminal departureTerminal = terminalService.findById(request.getDepartureTerminalId());
         Terminal destinationTerminal = terminalService.findById(request.getDestinationTerminalId());

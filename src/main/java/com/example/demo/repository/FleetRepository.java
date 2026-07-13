@@ -17,11 +17,12 @@ public interface FleetRepository extends JpaRepository<Fleet, Integer> {
 
     @Query("""
             SELECT f FROM Fleet f
-            WHERE f.bus_id = :busId
-            AND f.fleet_id NOT IN(
-                SELECT fleet_id FROM Trip
-                WHERE departure_time <= :arrival
-                AND arrival_time >= :depature
+            JOIN f.bus b
+            WHERE b.id = :busId
+            AND f.id NOT IN(
+                SELECT t.fleet.id FROM Trip t
+                WHERE t.departureTime <= :arrival
+                AND t.arrivalTime >= :departure
             )
             """)
     List<Fleet> findAvailableFleetByBusAndSchedule(

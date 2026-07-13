@@ -20,4 +20,5 @@ public class TripMapper {
                 t.getFleet().getType().getType(),
                 t.getFleet().getType().getPrice());
     }
+
 }

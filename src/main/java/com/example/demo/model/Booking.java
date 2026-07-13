@@ -2,6 +2,7 @@ package com.example.demo.model;
 
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.Column;
 import javax.persistence.Entity;
 import javax.persistence.EnumType;
@@ -29,13 +30,13 @@ public class Booking {
     private Integer id;
 
     @Column(name = "total_amount")
-    private String totalAmount;
+    private Integer totalAmount;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "status")
     private BookingStatus status;
 
-    @OneToMany(mappedBy = "booking")
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.PERSIST)
     private List<BookingItem> bookingItems;
 
     @ManyToOne

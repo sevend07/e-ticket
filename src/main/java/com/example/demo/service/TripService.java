@@ -6,6 +6,7 @@ import java.time.LocalTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -31,6 +32,11 @@ public class TripService {
     private final TripRepository repo;
     private final FleetService fleetService;
     private final TerminalService terminalService;
+
+
+    public Optional<Trip> getTripById(Integer id) {
+        return repo.findById(id);
+    }
 
     @Transactional
     public List<TripResponse.CompleteResponse> GetAvailableTrip(String departureTerminal, String destinationTerminal,
@@ -72,7 +78,7 @@ public class TripService {
         // List Fleet yang natinya akan di attach (setFleet) saat membuat data Trip
         List<Fleet> fleets = fleetService.findAllById(fleetIds);
 
-        // Map Fleet dengan key fleetId untuk menghindari N+1 
+        // Map Fleet dengan key fleetId untuk menghindari N+1
         Map<Integer, Fleet> fleetsMap = fleets.stream()
                 .collect(Collectors.toMap(Fleet::getId, f -> f, (a, b) -> a));
 
@@ -87,7 +93,7 @@ public class TripService {
             if (arrivalTime.isBefore(departureTime))
                 throw new RuntimeException("Arrival time must be later then departure time");
 
-            // for loop di fleet2 yang di pilih 
+            // for loop di fleet2 yang di pilih
             // jumlah trip yang terbuat tergantung berapa banyak fleet yang di pilih
             for (Integer fleetId : newFleetSchedule.getFleetIds()) {
                 List<Trip> existingTrips = conflictingTripsMap.getOrDefault(fleetId, List.of());
@@ -114,7 +120,7 @@ public class TripService {
                 createdTrips.add(trip);
 
                 // menambahkan trip baru ke Map existingTrip
-                // untuk validasi untuk mencegah overlap antar trip baru 
+                // untuk validasi untuk mencegah overlap antar trip baru
                 conflictingTripsMap.computeIfAbsent(fleetId, k -> new ArrayList<>())
                         .add(trip);
 

@@ -23,7 +23,7 @@ public class BookingMapper {
                         .toList());
     }
 
-    private static BookingResponse.BookingItem toBookingItemResponse(BookingItem items) {
+    public static BookingResponse.BookingItem toBookingItemResponse(BookingItem items) {
         Trip trip = items.getBooking().getTrip();
         Fleet fleet = items.getBooking().getTrip().getFleet();
         Seat seat = items.getSeat();

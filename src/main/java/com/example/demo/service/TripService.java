@@ -7,7 +7,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
@@ -33,13 +32,13 @@ public class TripService {
     private final FleetService fleetService;
     private final TerminalService terminalService;
 
-
     public Optional<Trip> getTripById(Integer id) {
         return repo.findById(id);
     }
 
     @Transactional
-    public List<TripResponse.CompleteResponse> GetAvailableTrip(String departureTerminal, String destinationTerminal,
+    public List<TripResponse.CompleteResponse> GetAvailableTrip(String departureTerminal,
+            String destinationTerminal,
             LocalDate schedule) {
         LocalDateTime start = schedule.atStartOfDay();
         LocalDateTime end = schedule.atTime(LocalTime.MAX);
@@ -47,91 +46,94 @@ public class TripService {
         return repo.findTrips(departureTerminal, destinationTerminal, start, end);
     }
 
-    @Transactional
-    public List<TripResponse.CompleteResponse> bulkCreate(CreateTripRequest request) {
-        Terminal departureTerminal = terminalService.findById(request.getDepartureTerminalId());
-        Terminal destinationTerminal = terminalService.findById(request.getDestinationTerminalId());
-
-        // Set of selected fleet -> Ids
-        Set<Integer> fleetIds = request.getScheduledFleets().stream()
-                .flatMap(s -> s.getFleetIds().stream()).collect(Collectors.toSet());
-
-        // Departute time paling awal dalam satu proses create trip
-        LocalDateTime minDeparture = request.getScheduledFleets().stream()
-                .map(FleetScheduleRequest::getDeparture)
-                .min(LocalDateTime::compareTo)
-                .orElseThrow(() -> new RuntimeException("Departure time is required"));
-
-        // Arrival time paling akhir dalam satu proses create trip
-        LocalDateTime maxArrival = request.getScheduledFleets().stream()
-                .map(FleetScheduleRequest::getDeparture)
-                .max(LocalDateTime::compareTo)
-                .orElseThrow(() -> new RuntimeException("Arrival time is required"));
-
-        // Existing Trip pada rentang waktu minDeparture hingga maxArrival
-        List<Trip> conflictingTrips = repo.findConflictingTrips(fleetIds, minDeparture, maxArrival);
-
-        // Grouping Existing Trip by fleetId untuk menghindari N+1
-        Map<Integer, List<Trip>> conflictingTripsMap = conflictingTrips.stream()
-                .collect(Collectors.groupingBy(t -> t.getFleet().getId()));
-
-        // List Fleet yang natinya akan di attach (setFleet) saat membuat data Trip
-        List<Fleet> fleets = fleetService.findAllById(fleetIds);
-
-        // Map Fleet dengan key fleetId untuk menghindari N+1
-        Map<Integer, Fleet> fleetsMap = fleets.stream()
-                .collect(Collectors.toMap(Fleet::getId, f -> f, (a, b) -> a));
-
-        // List untuk menampung trip2 baru
-        List<Trip> createdTrips = new ArrayList<>();
-
-        for (FleetScheduleRequest newFleetSchedule : request.getScheduledFleets()) {
-            LocalDateTime departureTime = newFleetSchedule.getDeparture();
-            LocalDateTime arrivalTime = newFleetSchedule.getArrival();
-
-            // validasi departure harus sebelum arrival
-            if (arrivalTime.isBefore(departureTime))
-                throw new RuntimeException("Arrival time must be later then departure time");
-
-            // for loop di fleet2 yang di pilih
-            // jumlah trip yang terbuat tergantung berapa banyak fleet yang di pilih
-            for (Integer fleetId : newFleetSchedule.getFleetIds()) {
-                List<Trip> existingTrips = conflictingTripsMap.getOrDefault(fleetId, List.of());
-
-                // Overlap schedule validation
-                for (Trip existing : existingTrips) {
-                    if (existing.getDepartureTime().isBefore(arrivalTime)
-                            && existing.getArrivalTime().isAfter(departureTime)) {
-                        throw new RuntimeException(
-                                String.format("Fleet %s has active schedule on %s - %s",
-                                        fleetsMap.get(fleetId).getCode(), existing.getDepartureTime(),
-                                        existing.getArrivalTime()));
-
-                    }
-                }
-
-                Trip trip = new Trip();
-                trip.setDepartureTerminal(departureTerminal);
-                trip.setDestinationTerminal(destinationTerminal);
-                trip.setDepartureTime(departureTime);
-                trip.setArrivalTime(arrivalTime);
-                trip.setFleet(fleetsMap.get(fleetId));
-
-                createdTrips.add(trip);
-
-                // menambahkan trip baru ke Map existingTrip
-                // untuk validasi untuk mencegah overlap antar trip baru
-                conflictingTripsMap.computeIfAbsent(fleetId, k -> new ArrayList<>())
-                        .add(trip);
-
+    // Overlap Schedule Validation
+    public void validateOverlap(
+            List<Trip> existingTrips, LocalDateTime outboundDeparture,
+            LocalDateTime returnArrival, Integer fleetId, Map<Integer, Fleet> fleets) {
+        for (Trip trip : existingTrips) {
+            if (outboundDeparture.isBefore(trip.getArrivalTime())
+                    && returnArrival.isAfter(trip.getDepartureTime())) {
+                throw new RuntimeException(
+                        String.format("Fleet %s has active schedule on %s - %s",
+                                fleets.get(fleetId).getCode(), trip.getDepartureTime(),
+                                trip.getArrivalTime()));
             }
         }
-
-        repo.saveAll(createdTrips);
-
-        return createdTrips.stream()
-                .map(tripMapper::toCompleteResponse)
-                .toList();
     }
 
+    @Transactional
+    public List<TripResponse.CompleteResponse> bulkCreate(CreateTripRequest request) {
+        LocalDateTime outboundDeparture, outboundArrival,
+                returnDeparture, returnArrival;
+        Integer tripDuration = request.getEstimatedDuration();
+        Integer turnaroundBuffer = request.getTurnaroundBufferDuration();
+
+        // Time window to get trip history by fleet and schedule from request
+        LocalDateTime minOutboundDeparture = request.getScheduledFleets().stream()
+                .map(FleetScheduleRequest::getDepartureSchedule)
+                .min(LocalDateTime::compareTo)
+                .orElseThrow(() -> new RuntimeException("Fleet & Departure time request is empty"));
+        LocalDateTime maxReturnArrival = request.getScheduledFleets().stream()
+                .map(f -> f.getDepartureSchedule()
+                        .plusHours(Integer.sum(tripDuration, turnaroundBuffer)))
+                .max(LocalDateTime::compareTo)
+                .orElseThrow(() -> new RuntimeException("Fleet & Departure time request is empty"));
+
+        // Get Terminal 
+        Terminal outboundDepartureTerminal = terminalService
+                .findById(request.getDepartureTerminalId());
+        Terminal outboundDestinationTerminal = terminalService
+                .findById(request.getDestinationTerminalId());
+
+        // Mapping outside for loop to avoid to much nested loop
+        Map<Integer, FleetScheduleRequest> fleetSchedule = request.getScheduledFleets()
+                .stream().collect(Collectors.toMap(r -> r.getFleetId(), r -> r));
+        Map<Integer, Fleet> fleetMap = fleetService.findAllById(fleetSchedule.keySet())
+                .stream().collect(Collectors.toMap(f -> f.getId(), f -> f, (a, b) -> a));
+
+        // Querying trip hystory at once to avoid N+1
+        Map<Integer, List<Trip>> tripHistoryByFleet = repo.findTripByTimeWindow(
+                fleetMap.keySet(), minOutboundDeparture, maxReturnArrival)
+                .stream().collect(Collectors.groupingBy(t -> t.getFleet().getId()));
+
+        List<Trip> tripsToSave = new ArrayList<>();
+
+        for (FleetScheduleRequest req : request.getScheduledFleets()) {
+            outboundDeparture = req.getDepartureSchedule();
+            outboundArrival = req.getDepartureSchedule().plusHours(tripDuration);
+            returnDeparture = outboundArrival.plusHours(turnaroundBuffer);
+            returnArrival = returnDeparture.plusHours(tripDuration);
+
+            validateOverlap(
+                    tripHistoryByFleet.getOrDefault(req.getFleetId(), List.of()),
+                    outboundDeparture, returnArrival,
+                    req.getFleetId(), fleetMap);
+
+            Trip outboundTrip = new Trip();
+            outboundTrip.setDepartureTime(outboundDeparture);
+            outboundTrip.setArrivalTime(outboundArrival);
+            outboundTrip.setDepartureTerminal(outboundDepartureTerminal);
+            outboundTrip.setDestinationTerminal(outboundDestinationTerminal);
+            outboundTrip.setFleet(fleetMap.get(req.getFleetId()));
+
+            Trip returnTrip = new Trip();
+            returnTrip.setDepartureTime(returnDeparture);
+            returnTrip.setArrivalTime(returnArrival);
+            returnTrip.setDepartureTerminal(outboundDestinationTerminal);
+            returnTrip.setDestinationTerminal(outboundDepartureTerminal);
+            returnTrip.setFleet(fleetMap.get(req.getFleetId()));
+
+            tripsToSave.addAll(List.of(outboundTrip, returnTrip));
+
+            // Add new trip to trip history for overlap validation againts new trip
+            tripHistoryByFleet.computeIfAbsent(
+                    req.getFleetId(), k -> new ArrayList<>())
+                    .addAll(List.of(outboundTrip, returnTrip));
+        }
+
+        List<Trip> createdTrips = repo.saveAll(tripsToSave);
+
+        return createdTrips.stream().map(tripMapper::toCompleteResponse)
+                .toList();
+    }
 }

@@ -26,8 +26,7 @@ public class FleetService {
     }
 
     public List<Fleet> findAvailableFleetByBusAndSchedule(
-            Integer busId, LocalDateTime departure, LocalDateTime arrival
-    ) {
+            Integer busId, LocalDateTime departure, LocalDateTime arrival) {
         return repo.findAvailableFleetByBusAndSchedule(busId, departure, arrival);
     }
 }

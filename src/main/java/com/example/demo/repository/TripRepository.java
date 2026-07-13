@@ -49,24 +49,14 @@ public interface TripRepository extends JpaRepository<Trip, Integer> {
 
     // boolean existsByFleetIdAndDepartureTime(Integer fleetId, LocalDateTime departureTime);
 
-    // @Query("""
-    //         SELECT arrival_time
-    //         FROM Trip
-    //         WHERE fleet_id = :fleetId
-    //         ORDER BY arrival_time DESC
-    //         LIMIT 1
-    //         """)
-    // LocalDateTime findLatestArrivalByFleet(
-    //         @Param("fleetId") Integer fleetId);
-
     @Query("""
-            SELECT DISTINCT t.fleet.id FROM Trip t
+            SELECT t FROM Trip t
             WHERE t.fleet.id IN :fleetIds
-            AND departureTime <= :maxArrival
-            AND arrivalTime >= :minDeparture
+            AND departureTime <= :maxReturnArrival
+            AND arrivalTime >= :minOutboundDeparture
             """)
-    List<Trip> findConflictingTrips(
+    List<Trip> findTripByTimeWindow(
             @Param("fleetIds") Set<Integer> fleetIds,
-            @Param("minDeparture") LocalDateTime minDeparture,
-            @Param("maxArrival") LocalDateTime maxArrival);
+            @Param("minOutboundDeparture") LocalDateTime minOutboundDeparture,
+            @Param("maxReturnArrival") LocalDateTime maxReturnArrival);
 }

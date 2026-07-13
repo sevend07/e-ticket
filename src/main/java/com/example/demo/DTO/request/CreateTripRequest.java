@@ -5,6 +5,8 @@ import java.util.List;
 import java.util.Set;
 
 import javax.validation.Valid;
+import javax.validation.constraints.Future;
+import javax.validation.constraints.Min;
 import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.NotEmpty;
 import javax.validation.constraints.NotNull;
@@ -24,11 +26,13 @@ public class CreateTripRequest {
     @NotNull(message = "Destination terminal is required")
     private Integer destinationTerminalId;
 
-    @NotNull(message = "Estimated duration is required")
+    @NotNull(message = "Estimated trip duration is required")
+    @Min(value = 1, message = "Trip duration must be at least one hour")
     private Integer estimatedDuration;
-
-    @NotNull(message = "Estimated break duration is reqeuired")
-    private Integer estimatedBreakDuration;
+    
+    @NotNull(message = "Estimated break duration is required")
+    @Min(value = 1, message = "Break uration must be at least one hour")
+    private Integer turnaroundBufferDuration;
 
     @NotEmpty(message = "Fleet and schedule is required")
     @Valid
@@ -38,14 +42,12 @@ public class CreateTripRequest {
     @AllArgsConstructor
     @NoArgsConstructor
     public static class FleetScheduleRequest {
-        @NotNull
-        private LocalDateTime departure;
+        @NotNull(message = "Departure time is required")
+        @Future(message = "Departure time must be in the future")
+        private LocalDateTime departureSchedule;
 
-        @NotNull
-        private LocalDateTime arrival;
-
-        @NotBlank
-        private Set<Integer> fleetIds;
+        @NotBlank(message = "Select at least one fleet")
+        private Integer fleetId;
     }
 
 }

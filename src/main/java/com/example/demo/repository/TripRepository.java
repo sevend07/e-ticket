@@ -16,38 +16,67 @@ import com.example.demo.model.Trip;
 public interface TripRepository extends JpaRepository<Trip, Integer> {
     @Query("""
             SELECT new com.example.demo.DTO.response.TripResponse$CompleteResponse(
-                tr.id, tr.departureTime, tr.arrivalTime,
-                dep_t.name, des_t.name, dep_t.city, des_t.city, b.name,
-                ty.type, ty.price
-            ) FROM Trip tr
-                JOIN tr.departureTerminal dep_t
-                JOIN tr.destinationTerminal des_t
-                JOIN tr.fleet f
-                JOIN f.bus b
-                JOIN f.type ty
-            WHERE dep_t.city = :departureTerminal
-            AND des_t.city = :destinationTerminal
+                    tr.id,
+                    tr.departureTime,
+                    tr.arrivalTime,
+                    dep.name,
+                    des.name,
+                    dep.city,
+                    des.city,
+                    b.name,
+                    f.code,
+                    ty.type,
+                    ty.price
+            )
+            FROM Trip tr
+            JOIN tr.departureTerminal dep
+            JOIN tr.destinationTerminal des
+            JOIN tr.fleet f
+            JOIN f.bus b
+            JOIN f.type ty
+            LEFT JOIN Booking bk
+                    ON bk.trip = tr
+                    AND bk.status = com.example.demo.enums.BookingStatus.BOOKED
+            LEFT JOIN BookingItem bi
+                    ON bi.booking = bk
+            WHERE dep.id = :departureTerminalId
+            AND des.id = :destinationTerminalId
             AND tr.departureTime BETWEEN :start AND :end
+            GROUP BY
+                    tr.id,
+                    tr.departureTime,
+                    tr.arrivalTime,
+                    dep.name,
+                    des.name,
+                    dep.city,
+                    des.city,
+                    b.name,
+                    ty.type,
+                    ty.price,
+                    ty.totalSeat
+            HAVING (ty.totalSeat - COUNT(bi.id)) >= :passengerCount
             """)
-    List<TripResponse.CompleteResponse> findTrips(
-            @Param("departureTerminal") String departureTerminal,
-            @Param("destinationTerminal") String destinationTerminal,
+    List<TripResponse.CompleteResponse> findAvailableTrips(
+            @Param("departureTerminalId") Integer departureTerminalId,
+            @Param("destinationTerminalId") Integer destinationTerminalId,
+            @Param("passengerCount") Integer passengerCount,
             @Param("start") LocalDateTime start,
             @Param("end") LocalDateTime end);
 
     // @Query("""
-    //         SELECT COUNT(*)
-    //         FROM Trip
-    //         WHERE fleet_id = :fleetId
-    //         AND departure_time <= :arrivalTime
-    //         AND arrival_time >= :departureTime
-    //         """)
+    // SELECT COUNT(*)
+    // FROM Trip
+    // WHERE fleet_id = :fleetId
+    // AND departure_time <= :arrivalTime
+    // AND arrival_time >= :departureTime
+    // """)
     // boolean existsOverlap(
-    //         @Param("fleetId") Integer fleetId,
-    //         @Param("departureTime") LocalDateTime departureTime,
-    //         @Param("arrivalTime") LocalDateTime arrivalTime);
+    // @Param("fleetId") Integer fleetId,
+    // @Param("departureTime") LocalDateTime departureTime,
+    // @Param("arrivalTime") LocalDateTime arrivalTime);
 
-    // boolean existsByFleetIdAndDepartureTime(Integer fleetId, LocalDateTime departureTime);
+    // boolean existsByFleetIdAndDepartureTime(Integer fleetId, LocalDateTime
+    // departureTime);
 
     @Query("""
             SELECT t FROM Trip t

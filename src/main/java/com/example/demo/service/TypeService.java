@@ -3,6 +3,8 @@ package com.example.demo.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.transaction.Transactional;
+
 import org.springframework.stereotype.Service;
 
 import com.example.demo.DTO.request.CreateTypeRequestDto;
@@ -16,6 +18,7 @@ import lombok.RequiredArgsConstructor;
 public class TypeService {
     private final TypeRepository repo;
 
+    @Transactional
     public List<Type> create(List<CreateTypeRequestDto> requests) {
         List<Type> newType = new ArrayList<>();
         for (CreateTypeRequestDto request : requests) {
@@ -36,4 +39,5 @@ public class TypeService {
         }
 
     }
+
 }

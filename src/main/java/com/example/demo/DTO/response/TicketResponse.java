@@ -1,7 +1,9 @@
 package com.example.demo.DTO.response;
 
-import lombok.Data;
+import com.example.demo.DTO.response.BookingResponse.BookingItemResponse;
+
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 
 @Data
@@ -9,6 +11,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 public class TicketResponse {
     private Integer id;
-    private BookingResponse.BookingItem bookingItem;
+    private BookingItemResponse bookingItem;
     private String qrCode;
 }

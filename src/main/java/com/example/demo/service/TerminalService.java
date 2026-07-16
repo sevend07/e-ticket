@@ -2,10 +2,12 @@ package com.example.demo.service;
 
 import java.util.List;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.DTO.request.CreateTerminalRequestDto;
 import com.example.demo.DTO.response.TerminalResponseDto;
+import com.example.demo.exception.BusinessException;
 import com.example.demo.mapper.TerminalMapper;
 import com.example.demo.model.Terminal;
 import com.example.demo.repository.TerminalRepository;
@@ -25,7 +27,9 @@ public class TerminalService {
 
     public Terminal findById(Integer id) {
         return terminalRepo.findById(id)
-                .orElseThrow(() -> new RuntimeException("Terminal not found"));
+                .orElseThrow(() -> new BusinessException(
+                        String.format("Terminal With id %s Not Found", id),
+                        HttpStatus.NOT_FOUND));
     }
 
     public TerminalResponseDto create(CreateTerminalRequestDto request) {

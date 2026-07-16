@@ -2,11 +2,15 @@ package com.example.demo.service;
 
 import javax.transaction.Transactional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.BadCredentialsException;
+import org.springframework.security.crypto.bcrypt.BCrypt;
 import org.springframework.stereotype.Service;
 
+import com.example.demo.DTO.request.LoginRequestDto;
 import com.example.demo.DTO.request.RegisterRequestDto;
 import com.example.demo.DTO.response.LoginResponse;
+import com.example.demo.exception.BusinessException;
 import com.example.demo.model.Person;
 import com.example.demo.model.Role;
 import com.example.demo.model.User;
@@ -20,6 +24,7 @@ import lombok.RequiredArgsConstructor;
 public class AuthService {
     private final RoleRepository roleRepository;
     private final UserRepository userRepo;
+    // private final
 
     // public AuthService(PersonRepository personRepo, UserRepository userRepo,
     // RoleRepository roleRepository) {
@@ -27,13 +32,20 @@ public class AuthService {
     // this.personRepo = personRepo;
     // this.roleRepository = roleRepository;
     // }
+    
+    @Transactional
+    public LoginResponse login(LoginRequestDto request) {
+        System.out.println(request.username());
+        System.out.println(request.password());
+        User user = userRepo.findByUsername(request.username())
+                .orElseThrow(() -> new BadCredentialsException("Username atau password salah 1"));
 
-    public LoginResponse login(String username, String password) {
-        User user = userRepo.findByUsername(username)
-                .orElseThrow(() -> new BadCredentialsException("Username atau password salah"));
-
-        if (password != user.getPassword())
-            throw new BadCredentialsException("Username atau password salah");
+        System.out.println(user.getUsername());
+        System.out.println(user.getPassword());
+        // if (BCrypt.checkpw(request.username(), user.getPassword()))
+        // throw new BadCredentialsException("Username atau password salah");
+        if (!request.password().equals(user.getPassword()))
+            throw new BadCredentialsException("Username atau password salah 2");
 
         return new LoginResponse(
                 user.getId(),
@@ -46,10 +58,12 @@ public class AuthService {
     public String register(RegisterRequestDto request) {
 
         if (userRepo.existsByUsername(request.username()))
-            throw new RuntimeException("Username already exists");
+            throw new BusinessException("Username already exists",
+                    HttpStatus.CONFLICT);
 
         Role role = roleRepository.findFirstByOrderByLevelDesc()
-                .orElseThrow(() -> new RuntimeException("Role not found"));
+                .orElseThrow(() -> new BusinessException("Role not found",
+                        HttpStatus.NOT_FOUND));
 
         Person newPerson = new Person();
         newPerson.setName(request.name());
@@ -59,7 +73,7 @@ public class AuthService {
 
         User newUser = new User();
         newUser.setUsername(request.username());
-        newUser.setPassword(request.password());
+        newUser.setPassword(BCrypt.hashpw(request.password(), BCrypt.gensalt()));
         newUser.setRole(role);
 
         newPerson.setUser(newUser);

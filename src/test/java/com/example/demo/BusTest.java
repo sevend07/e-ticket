@@ -65,7 +65,7 @@ public class BusTest {
         Assertions.assertEquals(2, response.size());
         Assertions.assertEquals(23, response.get(0).fleets().size());
         Assertions.assertEquals(40, response.get(1).fleets().size());
-        Assertions.assertEquals("SJ-0001", response.get(0).fleets().get(0).code());
-        Assertions.assertEquals("JAY-0001", response.get(1).fleets().get(0).code());
+        Assertions.assertEquals("SJ-0001", response.get(0).fleets().get(0).getCode());
+        Assertions.assertEquals("JAY-0001", response.get(1).fleets().get(0).getCode());
     }
 }

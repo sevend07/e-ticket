@@ -7,12 +7,15 @@ import java.util.stream.Collectors;
 
 import javax.transaction.Transactional;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.DTO.request.CreateBusRequestDto;
 import com.example.demo.DTO.request.CreateFleetRequestDto;
 import com.example.demo.DTO.response.BusResponseDto;
 import com.example.demo.DTO.response.FleetResponseDto;
+import com.example.demo.exception.BusinessException;
+import com.example.demo.mapper.FleetMapper;
 import com.example.demo.model.Bus;
 import com.example.demo.model.Fleet;
 import com.example.demo.model.Type;
@@ -48,9 +51,7 @@ public class BusService {
 
         for (Bus b : createdBuses) {
             List<FleetResponseDto> fleetResponses = b.getFleets().stream()
-                    .map(f -> new FleetResponseDto(
-                            f.getId(), f.getCode(), f.getType().getId(),
-                            f.getType().getType()))
+                    .map(FleetMapper::plain)
                     .toList();
 
             response.add(new BusResponseDto(b.getId(), b.getName(), fleetResponses));
@@ -59,6 +60,7 @@ public class BusService {
         return response;
     }
 
+    @Transactional
     public List<Fleet> createFleet(Bus bus, List<CreateFleetRequestDto> requests) {
 
         try {
@@ -67,7 +69,9 @@ public class BusService {
 
             Map<Integer, Type> typeMap = requestMap.keySet().stream()
                     .collect(Collectors.toMap(id -> id, id -> typeRepo.findById(id)
-                            .orElseThrow(() -> new RuntimeException("Type Not Found"))));
+                            .orElseThrow(() -> new BusinessException(
+                                    String.format("Type With id %s Not Found", id),
+                                    HttpStatus.NOT_FOUND))));
 
             List<Fleet> newFleets = new ArrayList<>();
 

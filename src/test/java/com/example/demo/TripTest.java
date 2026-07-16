@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
 import com.example.demo.DTO.request.CreateTripRequest;
+import com.example.demo.DTO.request.TripRequestDto;
 import com.example.demo.DTO.response.TripResponse;
 import com.example.demo.service.TripService;
 
@@ -71,10 +72,13 @@ public class TripTest {
 
     @Test
     void getAvailableTripSuccess() {
-        List<TripResponse.CompleteResponse> response = service.GetAvailableTrip(
-                "Jakarta",
-                "Surabaya",
-                LocalDate.of(2026, 07, 10));
+        TripRequestDto.FindAvailableTrips request = new TripRequestDto.FindAvailableTrips();
+        request.setDepartureTerminalId(1);
+        request.setDestinationTerminalId(2);
+        request.setPassengerCount(2);
+        request.setSchedule(LocalDate.of(2026, 07, 20));
+
+        List<TripResponse.CompleteResponse> response = service.searchAvailableTrips(request);
 
         Assertions.assertNotNull(response);
         Assertions.assertEquals("Jakarta", response.get(0).getDepartureTerminalCity());

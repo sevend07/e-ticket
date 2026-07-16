@@ -3,11 +3,15 @@ package com.example.demo.service;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.transaction.Transactional;
+
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 import com.example.demo.DTO.request.CreateBookingRequest;
 import com.example.demo.DTO.response.BookingResponse;
 import com.example.demo.enums.BookingStatus;
+import com.example.demo.exception.BusinessException;
 import com.example.demo.mapper.BookingMapper;
 import com.example.demo.model.Booking;
 import com.example.demo.model.BookingItem;
@@ -26,18 +30,37 @@ public class BookingService {
     private final TripService tripService;
     private final UserService userService;
 
+    public BookingResponse findById(Integer id) {
+        return repo.findById(id).map(BookingMapper::includeItem)
+                .orElseThrow(() -> new BusinessException(
+                        "Booking Not Found", HttpStatus.NOT_FOUND));
+    }
+
+    public List<BookingResponse> findAll() {
+        return repo.findAll().stream().map(BookingMapper::summary).toList();
+    }
+
+    public List<BookingResponse> findBookingByUserId(Integer userId) {
+        return repo.findByUserId(userId).stream().map(BookingMapper::summary).toList();
+    }
+
+    @Transactional
     public BookingResponse create(CreateBookingRequest request) {
-        Trip trip = tripService.getTripById(request.getTripId())
-                .orElseThrow(() -> new RuntimeException("Trip Not Found"));
+        Trip trip = tripService.findById(request.getTripId())
+                .orElseThrow(() -> new BusinessException(
+                        String.format("Trip With id %s Not Found", request.getTripId()),
+                        HttpStatus.NOT_FOUND));
 
         User customer = userService.getUserById(request.getCustomerId())
-                .orElseThrow(() -> new RuntimeException("User Not Found"));
+                .orElseThrow(() -> new BusinessException(
+                        String.format("User With id %s Not Found", request.getCustomerId()),
+                        HttpStatus.NOT_FOUND));
 
         List<Seat> availableSeats = seatService.getAvailableSeatByTrip(
                 trip.getId(), trip.getFleet().getType().getId());
 
         if (request.getPassengerCount() > availableSeats.size())
-            throw new RuntimeException("Seat not enough");
+            throw new BusinessException("Seat not enough", HttpStatus.BAD_REQUEST);
 
         Booking booking = new Booking();
         booking.setTrip(trip);
@@ -60,7 +83,7 @@ public class BookingService {
 
         Booking createdBooking = repo.save(booking);
 
-        return BookingMapper.toResponse(createdBooking);
+        return BookingMapper.includeItem(createdBooking);
     }
 
     private Integer countTotalAmount(List<Seat> seats) {

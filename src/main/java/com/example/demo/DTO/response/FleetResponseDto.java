@@ -1,11 +1,20 @@
 package com.example.demo.DTO.response;
 
-import com.example.demo.enums.Types;
+import java.util.List;
 
-public record FleetResponseDto(
-    Integer id,
-    String code,
-    Integer typeId,
-    Types type
-) {
+import com.example.demo.enums.Types;
+import com.fasterxml.jackson.annotation.JsonInclude;
+
+import lombok.Builder;
+import lombok.Data;
+
+@Data
+@Builder
+@JsonInclude(JsonInclude.Include.NON_NULL)
+public class FleetResponseDto {
+    private Integer id;
+    private String code;
+    private Integer typeId;
+    private Types type;
+    private List<TripResponse.CompleteResponse> trips;
 }
